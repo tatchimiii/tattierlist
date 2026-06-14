@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мой Аниме Тир-Лист</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+        .title-font {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card:hover {
+            transform: translateY(-8px) scale(1.03);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.5);
+        }
+        .tier-header {
+            background: linear-gradient(90deg, #1f2937, #374151);
+        }
+    </style>
+</head>
+<body class="bg-zinc-950 text-zinc-200 min-h-screen pb-12">
+    <div class="max-w-7xl mx-auto px-6 py-8">
+        <!-- Header -->
+        <div class="flex flex-col items-center mb-12">
+            <h1 class="title-font text-5xl font-bold tracking-tighter text-white mb-2 flex items-center gap-4">
+                <span class="text-violet-500">★</span> МОЙ АНИМЕ ТИР-ЛИСТ
+                <span class="text-violet-500">★</span>
+            </h1>
+            <p class="text-zinc-400 text-lg">2026 • Личный рейтинг</p>
+        </div>
+
+        <!-- Форма добавления -->
+        <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 mb-12 shadow-2xl">
+            <h2 class="text-2xl font-semibold mb-6 flex items-center gap-3">
+                <i class="fa-solid fa-plus text-violet-500"></i> Добавить аниме
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <input id="title" type="text" 
+                       class="bg-zinc-800 border border-zinc-700 focus:border-violet-500 rounded-2xl px-6 py-4 outline-none text-lg"
+                       placeholder="Название аниме">
+                
+                <select id="tierSelect" 
+                        class="bg-zinc-800 border border-zinc-700 focus:border-violet-500 rounded-2xl px-6 py-4 outline-none text-lg">
+                    <option value="s">S Tier — Шедевры</option>
+                    <option value="a">A Tier — Отличные</option>
+                    <option value="b">B Tier — Хорошие</option>
+                    <option value="c">C Tier — Средние</option>
+                    <option value="d">D Tier — Слабые</option>
+                </select>
+                
+                <input id="imageInput" type="file" accept="image/*"
+                       class="bg-zinc-800 border border-zinc-700 focus:border-violet-500 rounded-2xl px-6 py-4 outline-none file:mr-4 file:py-3 file:px-6 file:rounded-xl file:border-0 file:bg-violet-600 file:text-white">
+                
+                <button onclick="addAnime()" 
+                        class="bg-violet-600 hover:bg-violet-700 transition-colors font-semibold rounded-2xl px-8 py-4 text-lg flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-arrow-up-from-bracket"></i>
+                    Добавить
+                </button>
+            </div>
+        </div>
+
+        <!-- Тиры -->
+        <div id="tiers" class="space-y-10"></div>
+
+        <!-- Кнопки управления -->
+        <div class="flex justify-center gap-4 mt-12">
+            <button onclick="resetAll()" 
+                    class="px-6 py-3 bg-red-900/50 hover:bg-red-900 border border-red-700 rounded-2xl flex items-center gap-2 transition-colors">
+                <i class="fa-solid fa-trash"></i> Сбросить всё
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const tiersConfig = {
+            s: { name: "S Tier — Шедевры", color: "from-violet-600 t
+o-fuchsia-600" },
+            a: { name: "A Tier — Отличные", color: "from-emerald-600 to-teal-600" },
+            b: { name: "B Tier — Хорошие", color: "from-amber-600 to-orange-600" },
+            c: { name: "C Tier — Средние", color: "from-rose-700 to-pink-700" },
+            d: { name: "D Tier — Слабые", color: "from-zinc-700 to-gray-700" }
+        };
+
+        function loadData() {
+            const saved = localStorage.getItem('animeTierListPro');
+            return saved ? JSON.parse(saved) : { s: [], a: [], b: [], c: [], d: [] };
+        }
+
+        function saveData(data) {
+            localStorage.setItem('animeTierListPro', JSON.stringify(data));
+        }
+
+        function createCard(anime, tierKey) {
+            const card = document.createElement('div');
+            card.className = `card group bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden cursor-move`;
+            card.draggable = true;
+            card.dataset.id = anime.id;
+            
+            card.innerHTML = `
+                <div class="relative">
+                    <button onclick="deleteAnime('${anime.id}')" 
+                            class="absolute top-3 right-3 z-10 bg-black/70 hover:bg-red-600 text-white w-8 h-8 rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100">
+                        ✕
+                    </button>
+                    <img src="\( {anime.image}" alt=" \){anime.title}" 
+                         class="w-full aspect-[3/4] object-cover">
+                    <div class="p-4">
+                        <p class="text-center font-medium text-lg leading-tight">${anime.title}</p>
+                    </div>
+                </div>
+            `;
+            
+            card.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', anime.id);
+                e.dataTransfer.setData('tier', tierKey);
+            });
+            
+            return card;
+        }
+
+        function renderTiers() {
+            const container = document.getElementById('tiers');
+            container.innerHTML = '';
+            const data = loadData();
+
+            Object.keys(tiersConfig).forEach(tierKey => {
+                const tier = tiersConfig[tierKey];
+                const tierDiv = document.createElement('div');
+                tierDiv.className = `tier rounded-3xl overflow-hidden border border-zinc-800`;
+                
+                tierDiv.innerHTML = `
+                    <div class="tier-header bg-gradient-to-r ${tier.color} px-8 py-5">
+                        <h2 class="text-3xl font-bold tracking-tight text-white">${tier.name}</h2>
+                    </div>
+                    <div id="grid-${tierKey}" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 p-8 bg-zinc-950 min-h-[200px]"></div>
+                `;
+                
+                const grid = tierDiv.querySelector(`#grid-${tierKey}`);
+                
+                data[tierKey].forEach(anime => {
+                    grid.appendChild(createCard(anime, tierKey));
+                });
+                
+                // Drop zone
+                grid.addEventListener('dragover', e => e.preventDefault());
+                grid.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    const id = e.dataTransfer.getData('text/plain');
+                    const oldTier = e.dataTransfer.getData('tier');
+                    if (oldTier !== tierKey) moveAnime(id, oldTier, tierKey);
+                });
+                
+                container.appendChild(tierDiv);
+            });
+        }
+
+        function addAnime() {
+            const title = document.getElementById('title').value.trim();
+            const tierKey = document.getElementById('tierSelect').value;
+            const fileInput = document.getElementById('imageInput');
+            
+            if (!title) return alert("Введите название аниме!");
+const data = loadData();
+            
+            const addWithImage = (imgSrc) => {
+                const newAnime = {
+                    id: Date.now().toString(),
+                    title: title,
+                    image: imgSrc
+                };
+                data[tierKey].push(newAnime);
+                saveData(data);
+                renderTiers();
+                
+                // Очистка
+                document.getElementById('title').value = '';
+                fileInput.value = '';
+            };
+            
+            if (fileInput.files && fileInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => addWithImage(e.target.result);
+                reader.readAsDataURL(fileInput.files[0]);
+            } else {
+                // Плейсхолдер
+                addWithImage(`https://picsum.photos/id/${Math.floor(Math.random()*900)+100}/600/800`);
+            }
+        }
+
+        function deleteAnime(id) {
+            if (!confirm("Удалить это аниме?")) return;
+            const data = loadData();
+            Object.keys(data).forEach(key => {
+                data[key] = data[key].filter(a => a.id !== id);
+            });
+            saveData(data);
+            renderTiers();
+        }
+
+        function moveAnime(id, oldTier, newTier) {
+            const data = loadData();
+            let anime = null;
+            
+            data[oldTier] = data[oldTier].filter(a => {
+                if (a.id === id) {
+                    anime = a;
+                    return false;
+                }
+                return true;
+            });
+            
+            if (anime) {
+                data[newTier].push(anime);
+                saveData(data);
+                renderTiers();
+            }
+        }
+
+        function resetAll() {
+            if (confirm("Сбросить ВЕСЬ тир-лист? Это действие нельзя отменить.")) {
+                localStorage.removeItem('animeTierListPro');
+                renderTiers();
+            }
+        }
+
+        // Запуск
+        renderTiers();
+    </script>
+</body>
+</html>
